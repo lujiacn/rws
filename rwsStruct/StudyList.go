@@ -1,3 +1,4 @@
+//url link format http://.../RaveWebServices/studies
 package rwsStruct
 
 import "encoding/xml"

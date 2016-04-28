@@ -2,14 +2,14 @@ package rws
 
 import (
 	// . "./odms"
-	// "encoding/xml"
+	"encoding/xml"
 	// "bufio"
 	// "fmt"
 
+	"github.com/lujiacn/rws/rwsStruct"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"rws/rwsStruct"
 	"strings"
 
 	"github.com/clbanning/x2j"
@@ -64,12 +64,13 @@ func RwsToMap(api_url, user, pwd string) (map[string]interface{}, error) {
 	return output, nil
 }
 
-func UnmashalData(xml_data, type_str string) {
+func UnmashalData(xml_byte []byte, type_str string) interface{} {
 	switch type_str {
 	case "StudyList":
 		v := &rwsStruct.StudyList{}
-		// fmt.Println(v)
-
+		xml.Unmarshal(xml_byte, &v)
+		return v
 	}
+	return nil
 
 }
