@@ -20,35 +20,3 @@ type SubjectData struct {
 	StudyEventData         StudyEventData
 	FormData               FormData
 }
-
-type SiteRef struct {
-	XMLName     xml.Name `xml:"SiteRef"`
-	LocationOID string   `xml:"LocationOID,attr"`
-}
-
-type StudyEventData struct {
-	XMLName             xml.Name `xml:"StudyEventData"`
-	StudyEventOID       string   `xml:"StudyEventOID,attr"`
-	StudyEventRepeatKey string   `xml:"StudyEventRepeatKey,attr"`
-	FormData            FormData
-}
-
-type FormData struct {
-	XMLName        xml.Name `xml:"FormData"`
-	FormOID        string   `xml:"FormOID,attr"`
-	FormRepeateKey string   `xml:"FormRepeateKey,attr"`
-	ItemGroupData  ItemGroupData
-}
-
-type ItemGroupData struct {
-	XMLName             xml.Name `xml:"ItemGroupData"`
-	ItemGroupOID        string   `xml:"ItemGroupOID,attr"`
-	ItemGroupRepeateKey string   `xml:"ItemGroupRepeateKey,attr"`
-	ItemData            []ItemData
-}
-
-type ItemData struct {
-	XMLName xml.Name `xml:"ItemData"`
-	ItemOID string   `xml:"ItemOID,attr"`
-	Value   string   `xml:"Value,attr"`
-}
