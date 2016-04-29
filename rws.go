@@ -50,14 +50,8 @@ func ReadXml(file_name string) ([]byte, error) {
 	return data, nil
 }
 
-func RwsToMap(api_url, user, pwd string) (map[string]interface{}, error) {
-	body, err := RwsRead(api_url,
-		user, pwd)
-	if err != nil {
-		return nil, err
-	}
+func RwsToMap(body []byte) (map[string]interface{}, error) {
 	reader := strings.NewReader(string(body))
-
 	output, err := x2j.ToMap(reader)
 	if err != nil {
 		return nil, err
@@ -65,11 +59,10 @@ func RwsToMap(api_url, user, pwd string) (map[string]interface{}, error) {
 	return output, nil
 }
 
-func RwsToFlatMap(api_url, user, pwd string) {
-	fmt.Println("in Map")
-	tMap, err := RwsToMap(api_url, user, pwd)
+func RwsToFlatMap(body []byte) ([]map[string]string, error) {
+	tMap, err := RwsToMap(body)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	rowSlice := map[int]map[string]string{}
@@ -99,23 +92,22 @@ func RwsToFlatMap(api_url, user, pwd string) {
 
 	//flatten
 	colNames := []string{}
+	outPut := []map[string]string{}
 	for k, _ := range rowSlice[0] {
 		colNames = append(colNames, k)
 	}
+	outPut = append(outPut, rowSlice[0])
 
 	for _, col := range colNames {
 		for i := 1; i < len(rowSlice); i++ {
 			if _, ok := rowSlice[i][col]; !ok {
 				rowSlice[i][col] = rowSlice[0][col]
 			}
+			outPut = append(outPut, rowSlice[i])
 		}
 	}
 
-	for i, v := range rowSlice {
-		fmt.Println(i, v)
-	}
-
-	return
+	return outPut, nil
 }
 func UnmashalData(xml_byte []byte, type_str string) interface{} {
 	switch type_str {
