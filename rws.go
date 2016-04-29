@@ -79,6 +79,7 @@ func RwsToFlatMap(body []byte) ([]map[string]string, error) {
 					f(tSlice.(map[string]interface{}), k, newRowNum)
 				}
 			case reflect.String:
+				k := strings.Replace(k, "-", "", 1)
 				if _, ok := rowSlice[rowNum]; ok {
 					rowSlice[rowNum][k] = v.(string)
 				} else {
