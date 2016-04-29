@@ -4,7 +4,8 @@ import (
 	// . "./odms"
 	"encoding/xml"
 	// "bufio"
-	// "fmt"
+	"fmt"
+	"reflect"
 
 	"github.com/lujiacn/rws/rwsStruct"
 	"io/ioutil"
@@ -64,6 +65,58 @@ func RwsToMap(api_url, user, pwd string) (map[string]interface{}, error) {
 	return output, nil
 }
 
+func RwsToFlatMap(api_url, user, pwd string) {
+	fmt.Println("in Map")
+	tMap, err := RwsToMap(api_url, user, pwd)
+	if err != nil {
+		return
+	}
+
+	rowSlice := map[int]map[string]string{}
+	var f func(map[string]interface{}, string, int)
+	f = func(srcMap map[string]interface{}, pre string, rowNum int) {
+		for k, v := range srcMap {
+			switch reflect.ValueOf(v).Kind() {
+			case reflect.Map:
+				f(v.(map[string]interface{}), k, rowNum)
+			case reflect.Slice:
+				for i, tSlice := range v.([]interface{}) {
+					fmt.Println(k, i)
+					newRowNum := rowNum + i
+					f(tSlice.(map[string]interface{}), k, newRowNum)
+				}
+			case reflect.String:
+				if _, ok := rowSlice[rowNum]; ok {
+					rowSlice[rowNum][k] = v.(string)
+				} else {
+					rowSlice[rowNum] = map[string]string{k: v.(string)}
+				}
+			}
+		}
+	}
+	// outMap\ := map[string]string{}
+	f(tMap, "", 0)
+
+	//flatten
+	colNames := []string{}
+	for k, _ := range rowSlice[0] {
+		colNames = append(colNames, k)
+	}
+
+	for _, col := range colNames {
+		for i := 1; i < len(rowSlice); i++ {
+			if _, ok := rowSlice[i][col]; !ok {
+				rowSlice[i][col] = rowSlice[0][col]
+			}
+		}
+	}
+
+	for i, v := range rowSlice {
+		fmt.Println(i, v)
+	}
+
+	return
+}
 func UnmashalData(xml_byte []byte, type_str string) interface{} {
 	switch type_str {
 	case "StudyList":
