@@ -4,7 +4,7 @@ import (
 	// . "./odms"
 	"encoding/xml"
 	// "bufio"
-	"fmt"
+	// "fmt"
 	"reflect"
 
 	"github.com/lujiacn/rws/rwsStruct"
@@ -74,7 +74,7 @@ func RwsToFlatMap(body []byte) ([]map[string]string, error) {
 				f(v.(map[string]interface{}), k, rowNum)
 			case reflect.Slice:
 				for i, tSlice := range v.([]interface{}) {
-					fmt.Println(k, i)
+					// fmt.Println(k, i)
 					newRowNum := rowNum + i
 					f(tSlice.(map[string]interface{}), k, newRowNum)
 				}
@@ -99,13 +99,14 @@ func RwsToFlatMap(body []byte) ([]map[string]string, error) {
 	}
 	outPut = append(outPut, rowSlice[0])
 
-	for _, col := range colNames {
-		for i := 1; i < len(rowSlice); i++ {
+	for i := 1; i < len(rowSlice); i++ {
+		for _, col := range colNames {
 			if _, ok := rowSlice[i][col]; !ok {
 				rowSlice[i][col] = rowSlice[0][col]
 			}
-			outPut = append(outPut, rowSlice[i])
 		}
+
+		outPut = append(outPut, rowSlice[i])
 	}
 
 	return outPut, nil
