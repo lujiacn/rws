@@ -7,11 +7,12 @@ import (
 	// "fmt"
 	"reflect"
 
-	"github.com/lujiacn/rws/rwsStruct"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/lujiacn/rws/rwsStruct"
 
 	"github.com/clbanning/x2j"
 )
@@ -20,7 +21,6 @@ func RwsRead(api_url, user, pwd string) ([]byte, error) {
 	//read xml string
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", api_url, nil)
-	// req.SetBasicAuth("ALMAC_VAL", "Ea1?ZSX3")
 	req.SetBasicAuth(user, pwd)
 	resp, err := client.Do(req)
 	if err != nil {
