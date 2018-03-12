@@ -2,6 +2,7 @@ package rws
 
 import (
 	// . "./odms"
+	"crypto/tls"
 	"encoding/xml"
 	// "bufio"
 	// "fmt"
@@ -9,6 +10,7 @@ import (
 
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -17,12 +19,25 @@ import (
 	"github.com/clbanning/x2j"
 )
 
-func RwsRead(api_url, user, pwd string) ([]byte, error) {
-	//read xml string
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", api_url, nil)
+func RwsRead(apiUrl, user, pwd string, proxyUrl string) ([]byte, error) {
+
+	var client = &http.Client{}
+	if proxyUrl != "" {
+		proxy, _ := url.Parse(proxyUrl)
+		tr := &http.Transport{
+			Proxy:           http.ProxyURL(proxy),
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client = &http.Client{
+			Transport: tr,
+		}
+	}
+
+	//read body string
+	req, err := http.NewRequest("GET", apiUrl, nil)
 	req.SetBasicAuth(user, pwd)
 	resp, err := client.Do(req)
+
 	if err != nil {
 		return nil, err
 	}
