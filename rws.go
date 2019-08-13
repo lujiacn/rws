@@ -4,6 +4,7 @@ import (
 	// . "./odms"
 	"crypto/tls"
 	"encoding/xml"
+
 	// "bufio"
 	// "fmt"
 	"reflect"
@@ -74,10 +75,11 @@ func RwsToMap(body []byte) (map[string]interface{}, error) {
 	return output, nil
 }
 
-func RwsToFlatMap(body []byte) ([]map[string]string, error) {
+// return rows, colNames, error
+func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 	tMap, err := RwsToMap(body)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	rowSlice := map[int]map[string]string{}
@@ -94,7 +96,8 @@ func RwsToFlatMap(body []byte) ([]map[string]string, error) {
 					f(tSlice.(map[string]interface{}), k, newRowNum)
 				}
 			case reflect.String:
-				k := strings.Replace(k, "-", "", 1)
+				k := strings.Replace(k, "-", "_", 1)
+				k = pre + k
 				if _, ok := rowSlice[rowNum]; ok {
 					rowSlice[rowNum][k] = v.(string)
 				} else {
@@ -124,8 +127,9 @@ func RwsToFlatMap(body []byte) ([]map[string]string, error) {
 		outPut = append(outPut, rowSlice[i])
 	}
 
-	return outPut, nil
+	return outPut, colNames, nil
 }
+
 func UnmashalData(xml_byte []byte, type_str string) interface{} {
 	switch type_str {
 	case "StudyList":
