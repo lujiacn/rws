@@ -89,6 +89,7 @@ func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 	rowSlice := map[int]map[string]string{}
 	colNameMap := map[string]bool{}
 	var f func(map[string]interface{}, string, int)
+	odmMap := map[string]string{}
 	f = func(srcMap map[string]interface{}, pre string, rowNum int) {
 		for k, v := range srcMap {
 			switch reflect.ValueOf(v).Kind() {
@@ -101,19 +102,21 @@ func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 				}
 			case reflect.String:
 				k := strings.Replace(k, "-", "_", 1)
-				k = pre + k
+				newK := pre + k
 				colNameMap[k] = true
 				if _, ok := rowSlice[rowNum]; ok {
-					rowSlice[rowNum][k] = v.(string)
+					rowSlice[rowNum][newK] = v.(string)
 				} else {
-					rowSlice[rowNum] = map[string]string{k: v.(string)}
+					rowSlice[rowNum] = map[string]string{newK: v.(string)}
+				}
+				if pre == "ODM" {
+					odmMap[newK] = v.(string)
 				}
 			}
 		}
 	}
 	// outMap\ := map[string]string{}
 	f(tMap, "", 0)
-
 	//colNames
 	colNames := []string{}
 	for k, _ := range colNameMap {
@@ -123,6 +126,9 @@ func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 	outPut := []map[string]string{}
 
 	for _, row := range rowSlice {
+		for k, v := range odmMap {
+			row[k] = v
+		}
 		outPut = append(outPut, row)
 	}
 
