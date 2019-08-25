@@ -103,7 +103,7 @@ func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 			case reflect.String:
 				k := strings.Replace(k, "-", "_", 1)
 				newK := pre + k
-				colNameMap[k] = true
+				colNameMap[newK] = true
 				if _, ok := rowSlice[rowNum]; ok {
 					rowSlice[rowNum][newK] = v.(string)
 				} else {
