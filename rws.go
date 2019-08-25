@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/xml"
+	"fmt"
 
 	// "bufio"
 	// "fmt"
@@ -126,9 +127,12 @@ func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 	outPut := []map[string]string{}
 
 	for _, row := range rowSlice {
+		fmt.Println("befeore row --------", row)
 		for k, v := range odmMap {
 			row[k] = v
 		}
+
+		fmt.Println("after row --------", row)
 		outPut = append(outPut, row)
 	}
 
