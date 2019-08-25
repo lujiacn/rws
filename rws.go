@@ -2,6 +2,7 @@ package rws
 
 import (
 	// . "./odms"
+	"bytes"
 	"crypto/tls"
 	"encoding/xml"
 
@@ -67,7 +68,10 @@ func ReadXml(file_name string) ([]byte, error) {
 }
 
 func RwsToMap(body []byte) (map[string]interface{}, error) {
-	reader := strings.NewReader(string(body))
+	// replace <mdsol: to <mdsol_Query
+	newBody := bytes.ReplaceAll(body, []byte("<mdsol:"), []byte("<"))
+	reader := bytes.NewReader(newBody)
+	//reader := strings.NewReader(string(newBody))
 	output, err := x2j.ToMap(reader)
 	if err != nil {
 		return nil, err
@@ -83,6 +87,7 @@ func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 	}
 
 	rowSlice := map[int]map[string]string{}
+	colNameMap := map[string]bool{}
 	var f func(map[string]interface{}, string, int)
 	f = func(srcMap map[string]interface{}, pre string, rowNum int) {
 		for k, v := range srcMap {
@@ -91,13 +96,13 @@ func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 				f(v.(map[string]interface{}), k, rowNum)
 			case reflect.Slice:
 				for i, tSlice := range v.([]interface{}) {
-					// fmt.Println(k, i)
 					newRowNum := rowNum + i
 					f(tSlice.(map[string]interface{}), k, newRowNum)
 				}
 			case reflect.String:
 				k := strings.Replace(k, "-", "_", 1)
 				k = pre + k
+				colNameMap[k] = true
 				if _, ok := rowSlice[rowNum]; ok {
 					rowSlice[rowNum][k] = v.(string)
 				} else {
@@ -109,22 +114,16 @@ func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 	// outMap\ := map[string]string{}
 	f(tMap, "", 0)
 
-	//flatten
+	//colNames
 	colNames := []string{}
-	outPut := []map[string]string{}
-	for k, _ := range rowSlice[0] {
+	for k, _ := range colNameMap {
 		colNames = append(colNames, k)
 	}
-	outPut = append(outPut, rowSlice[0])
 
-	for i := 1; i < len(rowSlice); i++ {
-		for _, col := range colNames {
-			if _, ok := rowSlice[i][col]; !ok {
-				rowSlice[i][col] = rowSlice[0][col]
-			}
-		}
+	outPut := []map[string]string{}
 
-		outPut = append(outPut, rowSlice[i])
+	for _, row := range rowSlice {
+		outPut = append(outPut, row)
 	}
 
 	return outPut, colNames, nil
