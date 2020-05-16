@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/xml"
+	"fmt"
+	"regexp"
 
 	// "bufio"
 	// "fmt"
@@ -69,7 +71,11 @@ func ReadXml(file_name string) ([]byte, error) {
 
 func RwsToMap(body []byte) (map[string]interface{}, error) {
 	// replace <mdsol: to <mdsol_Query
-	newBody := bytes.ReplaceAll(body, []byte("<mdsol:"), []byte("<"))
+	reg := regexp.MustCompile(`<(\/?)(\w+)(:)(\w+)>`)
+	newBody := reg.ReplaceAll(body, []byte("<$1$2_$4>"))
+	//fmt.Println("Debug ---", stringnewBody)
+	//newBody := bytes.ReplaceAll(body, []byte("<mdsol:"), []byte("<"))
+	//ioutil.WriteFile("/tmp/dat1.xml", newBody, 0644)
 	reader := bytes.NewReader(newBody)
 	//reader := strings.NewReader(string(newBody))
 	output, err := x2j.ToMap(reader)
@@ -96,9 +102,33 @@ func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 			case reflect.Map:
 				f(v.(map[string]interface{}), k, rowNum)
 			case reflect.Slice:
+				//fmt.Println("Debug ---", k, v)
+				strValue := ""
 				for i, tSlice := range v.([]interface{}) {
-					newRowNum := rowNum + i
-					f(tSlice.(map[string]interface{}), k, newRowNum)
+					//f(tSlice.(map[string]interface{}), k, newRowNum)
+					if reflect.TypeOf(tSlice).Kind() == reflect.String {
+						fmt.Println("Debug ----", tSlice)
+						strValue = strValue + " | " + tSlice.(string)
+					} else {
+						newRowNum := rowNum + i
+						f(tSlice.(map[string]interface{}), k, newRowNum)
+					}
+
+				}
+				// as string output
+				if strValue != "" {
+					k := strings.Replace(k, "-", "_", 1)
+					newK := pre + k
+					colNameMap[newK] = true
+					if _, ok := rowSlice[rowNum]; ok {
+						rowSlice[rowNum][newK] = strValue
+					} else {
+						rowSlice[rowNum] = map[string]string{newK: strValue}
+					}
+					if pre == "ODM" {
+						odmMap[newK] = strValue
+					}
+
 				}
 			case reflect.String:
 				k := strings.Replace(k, "-", "_", 1)
