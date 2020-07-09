@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"regexp"
+	"strconv"
 
 	// "bufio"
 	// "fmt"
@@ -73,11 +74,7 @@ func RwsToMap(body []byte) (map[string]interface{}, error) {
 	// replace <mdsol: to <mdsol_Query
 	reg := regexp.MustCompile(`<(\/?)(\w+)(:)(\w+)>`)
 	newBody := reg.ReplaceAll(body, []byte("<$1$2_$4>"))
-	//fmt.Println("Debug ---", stringnewBody)
-	//newBody := bytes.ReplaceAll(body, []byte("<mdsol:"), []byte("<"))
-	//ioutil.WriteFile("/tmp/dat1.xml", newBody, 0644)
 	reader := bytes.NewReader(newBody)
-	//reader := strings.NewReader(string(newBody))
 	output, err := x2j.ToMap(reader)
 	if err != nil {
 		return nil, err
@@ -94,70 +91,100 @@ func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 
 	rowSlice := map[int]map[string]string{}
 	colNameMap := map[string]bool{}
-	var f func(map[string]interface{}, string, int)
-	odmMap := map[string]string{}
-	f = func(srcMap map[string]interface{}, pre string, rowNum int) {
+	var f func(map[string]interface{}, int, int)
+	//odmMap := map[string]string{}
+	f = func(srcMap map[string]interface{}, pre int, rowNum int) {
+		pre = pre + 1
 		for k, v := range srcMap {
+			k = strings.TrimPrefix(k, "-")
+
 			switch reflect.ValueOf(v).Kind() {
 			case reflect.Map:
-				f(v.(map[string]interface{}), k, rowNum)
+				f(v.(map[string]interface{}), pre, rowNum)
 			case reflect.Slice:
-				//fmt.Println("Debug ---", k, v)
 				strValue := ""
+
 				for i, tSlice := range v.([]interface{}) {
 					//f(tSlice.(map[string]interface{}), k, newRowNum)
 					if reflect.TypeOf(tSlice).Kind() == reflect.String {
-						fmt.Println("Debug ----", tSlice)
 						strValue = strValue + " | " + tSlice.(string)
 					} else {
 						newRowNum := rowNum + i
-						f(tSlice.(map[string]interface{}), k, newRowNum)
+						f(tSlice.(map[string]interface{}), pre, newRowNum)
 					}
 
 				}
 				// as string output
 				if strValue != "" {
 					k := strings.Replace(k, "-", "_", 1)
-					newK := pre + k
+					//newK := pre + k
+					newK := k
 					colNameMap[newK] = true
 					if _, ok := rowSlice[rowNum]; ok {
 						rowSlice[rowNum][newK] = strValue
 					} else {
 						rowSlice[rowNum] = map[string]string{newK: strValue}
 					}
-					if pre == "ODM" {
-						odmMap[newK] = strValue
-					}
+					rowSlice[rowNum]["level"] = fmt.Sprintf("%v", pre)
+					//odmMap[newK] = strValue
+					//if pre == "ODM" {
+					//odmMap[newK] = strValue
+					//}
 
 				}
 			case reflect.String:
 				k := strings.Replace(k, "-", "_", 1)
-				newK := pre + k
+				//newK := pre + k
+				newK := k
 				colNameMap[newK] = true
 				if _, ok := rowSlice[rowNum]; ok {
 					rowSlice[rowNum][newK] = v.(string)
 				} else {
 					rowSlice[rowNum] = map[string]string{newK: v.(string)}
 				}
-				if pre == "ODM" {
-					odmMap[newK] = v.(string)
-				}
+
+				rowSlice[rowNum]["level"] = fmt.Sprintf("%v", pre)
+				//odmMap[newK] = v.(string)
+				//if pre == "ODM" {
+				//odmMap[newK] = v.(string)
+				//}
 			}
 		}
 	}
 	// outMap\ := map[string]string{}
-	f(tMap, "", 0)
+	f(tMap, 0, 0)
 	//colNames
-	colNames := []string{}
-	for k, _ := range colNameMap {
+	colNames := []string{"level"}
+	for k := range colNameMap {
 		colNames = append(colNames, k)
 	}
 
 	outPut := []map[string]string{}
+	//lagRow := map[string]string{}
+	levelMap := map[int]map[string]string{}
+	for i := 0; i < len(rowSlice); i++ {
+		row := rowSlice[i]
 
-	for _, row := range rowSlice {
-		for k, v := range odmMap {
-			row[k] = v
+		level, _ := strconv.Atoi(row["level"])
+
+		if _, found := levelMap[level]; !found {
+			levelMap[level] = row
+		}
+
+		preRow := map[string]string{}
+
+		if i > 0 {
+			for j := level; j < 0; j-- {
+				if _, found := levelMap[j]; found {
+					preRow = levelMap[j]
+				}
+			}
+		}
+
+		for _, c := range colNames {
+			if v, ok := preRow[c]; ok {
+				row[c] = v
+			}
 		}
 		outPut = append(outPut, row)
 	}
