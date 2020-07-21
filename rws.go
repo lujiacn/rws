@@ -83,6 +83,7 @@ func RwsToMap(body []byte) (map[string]interface{}, error) {
 }
 
 // return rows, colNames, error
+// TODO to optimize
 func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 	tMap, err := RwsToMap(body)
 	if err != nil {
@@ -174,19 +175,28 @@ func RwsToFlatMap(body []byte) ([]map[string]string, []string, error) {
 		preRow := map[string]string{}
 
 		if i > 0 {
-			for j := level; j < 0; j-- {
-				if _, found := levelMap[j]; found {
-					preRow = levelMap[j]
+			for j := 0; j < level; j++ {
+				if items, found := levelMap[j]; found {
+					fmt.Println("Found preRow, level, preLevel", j)
+					for k, v := range items {
+						if k == "level" {
+							continue
+						}
+						preRow[k] = v
+					}
+					//preRow = levelMap[j]
 				}
 			}
 		}
 
+		fmt.Println(i, level, preRow)
+
 		for _, c := range colNames {
-			if v, ok := preRow[c]; ok {
-				row[c] = v
+			if v, ok := row[c]; ok {
+				preRow[c] = v
 			}
 		}
-		outPut = append(outPut, row)
+		outPut = append(outPut, preRow)
 	}
 
 	return outPut, colNames, nil
